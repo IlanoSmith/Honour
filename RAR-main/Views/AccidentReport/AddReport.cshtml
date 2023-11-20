@@ -1,0 +1,601 @@
+@model AccidentReportViewModel
+
+@inject SignInManager<User> signInManager;
+@inject UserManager<User> userManager;
+
+@{
+    ViewData["Title"] = "Accident Reporting";
+    Layout = "_Layout";
+    
+    var userId = userManager.GetUserId(User);
+    User user_id = await userManager.FindByIdAsync(userId);
+    
+}
+
+<style>
+    /* #newreport{
+        text-decoration: none;
+    }
+
+    #newreport:hover{
+        margin-top: 4px;
+        transition: 0.3s ease;        
+    }
+   
+   .scroll {
+        height:400px;
+        overflow-y: scroll;
+        background-color: #F5F7FB;
+    }
+
+      .itemfooter{
+        visibility: hidden;
+        opacity: 0.0;
+        transition: visibility .3; 
+        transition: opacity .3;    
+    }
+
+    .bc_hover:hover .itemfooter{
+        visibility: visible; 
+        opacity: 1;           
+
+    } */
+
+    #newreport{
+        text-decoration: none;
+        transition: 0.1s ease;  
+    }
+
+    #newreport:hover{
+        margin-top: 4px;
+        transition: 0.3s ease;        
+    }
+
+    #reportDetails{
+        transition: transform .2s;
+    }
+
+    #reportDetails:hover{
+        margin: 2px;
+        
+        border: 1px solid red;
+    }
+   
+   .scroll {
+        height:400px;
+        overflow-y: scroll;
+        background-color: #F5F7FB;
+    }
+    
+   .swal-text{
+        max-height: 6em; 
+        overflow-y: scroll;
+        width: 100%;
+    };
+    
+
+</style>
+
+
+  @section Scripts{
+        <script>
+            $(document).ready(function() {
+                
+                //SAVE Accident Report
+                $("#submitAddReport").on("click", function() {
+                    var formData = new FormData();
+                    formData.append("AccDate", $("#AccDate").val());
+                    formData.append("AccTime", $("#AccTime").val());
+                    formData.append("AccidentLocation", $("#AccidentLocation").val());
+                    formData.append("AccidentDescription", $("#AccidentDescription").val());
+                    formData.append("CollisionType", $("#CollisionType").val());
+                    formData.append("AccKilled", $("#AccKilled").val());
+                    formData.append("AccInjured", $("#AccInjured").val());
+                    formData.append("Province", $("#Province").val());
+                    formData.append("City", $("#City").val());
+                    formData.append("PoliceStation", $("#PoliceStation").val());
+                    formData.append("AccidentType", $("#AccidentType").val());
+                    formData.append("HitAndRun", $("#HitAndRun").val());
+                    formData.append("WeatherType", $("#WeatherType").val());
+                    
+                    var f = [];
+                    for (const pair of formData.entries()) {
+                        if(pair[1] == ""){
+                            f.push(pair[1]);
+                        }
+                    }
+
+                    const forms = document.querySelectorAll('.needs-validation')
+
+                     
+
+
+                     if(f.length > 0){                        
+                       // alert(validateAddReportForm());
+                       validatedNew();
+                    }else{                                  
+                        $.ajax({
+                            type: 'POST',
+                            url: '@Url.Action("AddReportAjax", "AccidentReport")',
+                            contentType: false,
+                            processData: false,
+                            cache: false,
+                            data: formData,
+                            success: addReportSuccessCallback,
+                            error: addReportErrorCallback
+                        });    
+                    }           
+                });                
+                
+             
+                function addReportErrorCallback() {
+                    alert("An error while adding your report. please try again.");
+                }
+                function addReportSuccessCallback(response) {
+                    if (response.responseCode == 0) {
+                     
+                        SectionAdd("Add Report", "Accident ID: " + response.responseMessage 
+                            + " was added successfully. <br /><br /> You may continue to add " 
+                            + " <u><strong> Road Factor Details</strong></u> to your report.");                        
+                    }
+                    else {
+                        alert(response.ResponseMessage);
+                    }
+                };
+
+                //SAVE Road Factor Details
+                $("#submitAddRoadFactors").on("click", function() {
+                    var formData = new FormData();
+                    formData.append("RoadName", $("#RoadName").val());
+                    formData.append("RoadNumber", $("#RoadNumber").val());
+                    formData.append("Landamrk", $("#Landamrk").val());
+                    formData.append("PhysicalDivider", $("#PhysicalDivider").val());
+                    formData.append("OnGoingRoadWorks", $("#OnGoingRoadWorks").val());
+                    formData.append("RoadType", $("#RoadType").val());
+                    formData.append("RoadFeature", $("#RoadFeature").val());
+                    formData.append("RoadSurface", $("#RoadSurface").val());
+                    formData.append("SurfaceCondition", $("#SurfaceCondition").val());
+                    formData.append("SurfaceQuality", $("#SurfaceQuality").val());
+                    formData.append("SpeedLimit", $("#SpeedLimit").val());
+                    formData.append("Lane", $("#Lane").val()); 
+                    
+                    var f = [];
+                    for (const pair of formData.entries()) {
+                        if(pair[1] == ""){
+                            f.push(pair[1]);
+                        }
+                    }
+
+                     if(f.length > 0){
+                        //validateAddRoadFactorsForm();
+                        validatedNew();
+                    }else{              
+                        $.ajax({
+                            type: 'POST',
+                            url: '@Url.Action("AddRoadFactorsAjax", "AccidentReport")',
+                            contentType: false,
+                            processData: false,
+                            cache: false,
+                            data: formData,
+                            success: roadFactorSuccessCallback,
+                            error: roadFactorErrorCallback
+                        });    
+                    }           
+                });                
+                              
+                function roadFactorErrorCallback() {
+                    alert("An error occured while trying to add road factors. Please try again.");
+                }
+                function roadFactorSuccessCallback(response) {
+                    if (response.responseCode == 0) {                        
+                        SectionAdd("Add Road Factors", "Accident on Road: " + response.responseMessage 
+                            + " was added successfully. <br /><br /> You may continue to add <u><strong>Vehicle Details</strong></u> to your report.");                        
+                    }
+                    else {
+                        alert(response.ResponseMessage);
+                    }
+                };
+
+                //SAVE Vehicle Details
+                $("#submitAddVehicle").on("click", function() {
+                      
+                    var formData = new FormData();
+                    formData.append("VehicleRegistrationNr", $("#VehicleRegistrationNr").val());
+                    formData.append("VehicleOwner", $("#VehicleOwner").val());
+                    formData.append("VehicleType", $("#VehicleType").val());
+                    formData.append("LoadType", $("#LoadType").val());
+                    formData.append("LoadCondition", $("#LoadCondition").val());
+                    formData.append("MechanicalFailure", $("#MechanicalFailure").val());
+
+                    var f = [];
+                    for (const pair of formData.entries()) {
+                        if(pair[1] == ""){
+                            f.push(pair[1]);
+                        }
+                    }
+                    
+                    if(f.length > 0){
+                        // validateAddVehicleForm();
+                        validatedNew();
+                    }else{                        
+                        $.ajax({
+                            type: 'POST',
+                            url: '@Url.Action("AddVehicleAjax", "AccidentReport")',
+                            contentType: false,
+                            processData: false,
+                            cache: false,
+                            data: formData,
+                            success: vehicleSuccessCallback,
+                            error: vehicleErrorCallback
+                        });   
+                    }
+                        
+                });                
+                              
+                function resetVehicleForm() {
+                    $("#VehicleRegistrationNr").val("");
+                    $("#VehicleOwner").val("");
+                    $("#VehicleType").val("");
+                    $("#LoadType").val("");
+                    $("#LoadCondition").val("");
+                }
+
+                function vehicleErrorCallback() {
+                    alert("An error occured while adding vehicle details. Please try again.");
+                }
+                function vehicleSuccessCallback(response) {
+                    if (response.responseCode == 0) {                        
+                        SectionAdd("Add Vehicle Details", "Car detail with Reg: " + response.responseMessage 
+                            + " was added successfully. <br /><br /> You may continue to add <u><strong>Driver"
+                            + " Details</strong></u> or add another Vehicle involved to your report.");                        
+                    }
+                    else {
+                        alert("Problem adding your report.");
+                    }
+                };
+
+                 $("#newVehicle").on("click", function() {
+                    resetVehicleForm();
+                 });
+
+
+                //SAVE Driver Details
+                $("#submitAddDriverInfor").on("click", function() {
+                    var formData = new FormData();
+                    formData.append("VehicleDriverOwner", $("#VehicleDriverOwner").val());
+                    formData.append("Name", $("#Name").val());
+                    formData.append("Surname", $("#Surname").val());
+                    formData.append("Age", $("#Age").val());
+                    formData.append("PhoneNumber", $("#PhoneNumber").val());
+                    formData.append("Address", $("#Address").val());
+                    formData.append("Race", $("#Race").val());
+                    formData.append("Gender", $("#Gender").val());
+                    formData.append("License", $("#License").val());
+                    formData.append("LicenseRegNumber", $("#LicenseRegNumber").val());
+                    formData.append("AlcoholTested", $("#AlcoholTested").val());
+                    formData.append("AlcoholSuspected", $("#AlcoholSuspected").val());
+                    formData.append("SafetyDeviceUsed", $("#SafetyDeviceUsed").val());
+                    formData.append("TrafficViolation", $("#TrafficViolation").val());
+
+                    var f = [];
+                    for (const pair of formData.entries()) {
+                        if(pair[1] == ""){
+                            f.push(pair[1]);
+                        }
+                    }
+                           
+                     if(f.length > 0){
+                        // validateAddDriverInforForm();
+                        validatedNew();
+                    }else{
+                        $.ajax({
+                            type: 'POST',
+                            url: '@Url.Action("AddDriverInformationAjax", "AccidentReport")',
+                            contentType: false,
+                            processData: false,
+                            cache: false,
+                            data: formData,
+                            success: driverSuccessCallback,
+                            error: driverErrorCallback
+                        });      
+                    }         
+                });                
+                              
+                function resetDriverForm() {
+                    $("#Name").val("");
+                    $("#Surname").val("");
+                    $("#Age").val("");
+                    $("#PhoneNumber").val("");
+                    $("#Race").val("");
+                    $("#Gender").val("");
+                    $("#VehicleOwner").val("");
+                    $("#LicenseRegNumber").val("");
+                    $("#VehicleDriverOwner").val("");
+                   
+                }
+
+                function driverErrorCallback() {
+                    alert("An error occured while adding driver details. Please try again.");
+                }
+                function driverSuccessCallback(response) {
+                    if (response.responseCode == 0) {                        
+                        SectionAdd("Add Driver Details", "Driver details: " + response.responseMessage 
+                            + " was added successfully. <br /><br /> You may continue to add more <u><strong> Driver Details</strong></u>" 
+                            + " or you can complete the report on the next section.</u> to your report.");                        
+                    }
+                    else {
+                        alert("Problem adding your report.");
+                    }
+                };
+
+                 $("#newDriver").on("click", function() {
+                    resetDriverForm();
+                 });
+
+
+            });
+        </script>
+    }    
+
+<div class="container-fluid p-0">
+ 
+    <div class="d-flex flex-row justify-content-between">  
+        <div class="col-auto">                                                
+            <h1 class="h3 mb-3" style="line-height:40px;">Accident Reporting</h1>                       
+        </div> 
+        <div class="col-auto">
+            <div class="d-flex">                                   
+                <a href="~/AccidentReport/LatestAccidents" id="newreport" class="col-auto"> 
+                    <div class="col-auto stat text-primary">                                    
+                        <i class="align-middle" data-feather="arrow-right"></i>                         
+                    </div>
+                </a>
+                <div class="col-auto">
+                    <h1 class="h3 mb-3" id="title_page" style="line-height:40px;padding-left:5px;">Latest Report</h1>
+                </div>                
+            </div>     
+        </div>  
+          
+    </div>
+    
+    <div class="d-flex flex-row justify-content-between"> 
+        @if(!string.IsNullOrEmpty(ViewBag.Result))
+        {
+            <div class="alert alert-success" role="alert">
+                <p>Success Banner: @ViewBag.Result</p>
+            </div>
+           
+        }
+         <!-- Success Banner: @ViewBag.Result -->
+    </div>
+
+   
+    <div class="row" id="add_report">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="card-title mb-0">Add New Accident Report</h5>
+                    <hr />
+                </div>
+                <div class="card-body">
+                     
+                    @{
+                        if(Model.Accounts != null && Model.Accounts.Count() != 0)
+                        {
+                            var v_id = Model.Accounts.Where(c => c.Id == userId).ToList();
+                           
+                            var s_id = "";
+                            foreach(var i in v_id)
+                            {
+                                s_id = i.Id;
+                            } //Check if a user has created an acount.
+
+                            if ((!String.IsNullOrEmpty(s_id) && await userManager.IsInRoleAsync(user_id,"Officer"))) //If there is an account for the logged in user.
+                            {                
+                                @await Component.InvokeAsync("AddReportAjax")
+                            }
+                            else
+                            if((await userManager.IsInRoleAsync(user_id,"Data Manager")) )
+                            {
+                             
+                                <div class="alert alert-warning">
+                                    <p><h4>(Data Managers) cannot add reports</h4></p>
+                                    <h5>Please use the <span class="text-info">Action Buttons</span> to confirm or edit reported accidents.</h5>
+                                </div>   
+                            }
+                            else
+                            {                            
+                                if(await userManager.IsInRoleAsync(user_id,"Admins"))
+                                {
+                                    <div class="alert alert-warning">
+                                        <h5>Admin Users cannot log accident report</h5>
+                                    </div>                                    
+                                }                            
+                                else
+                                if(String.IsNullOrEmpty(s_id) && await userManager.IsInRoleAsync(user_id,"Officer"))
+                                {   
+                                    <div class="alert alert-warning">
+                                        <h5>Please go to your <span><a href="~/Account/Profile">profile</a></span> to complete your account before logging an accident report</h5>
+                                    </div>
+                                }                                  
+                            }
+                            
+                        }
+                    }
+                       
+                </div>
+            </div>
+        </div>
+    </div>
+   
+</div>
+
+
+<script>
+
+    const x = document.getElementById("AccidentLocation");
+
+    //Geo-Location [HTML5 JS] - API
+    function getLocation() {
+    if (navigator.geolocation) {
+        navigator.geolocation.getCurrentPosition(showPosition, showError);
+    } else { 
+        x.value = "Geolocation is not supported by this browser.";
+    }
+    }
+
+    //Get LAt. and Long.
+    function showPosition(position) {
+        x.value = position.coords.latitude + "," + position.coords.longitude;
+    }
+
+    function showError(error) {
+            switch(error.code) {
+            case error.PERMISSION_DENIED:
+            x.innerHTML = "User denied the request for Geolocation."
+            break;
+            case error.POSITION_UNAVAILABLE:
+            x.innerHTML = "Location information is unavailable."
+            break;
+            case error.TIMEOUT:
+            x.innerHTML = "The request to get user location timed out."
+            break;
+            case error.UNKNOWN_ERROR:
+            x.innerHTML = "An unknown error occurred."
+            break;
+        }
+    }
+
+    function validateAddReportForm() {
+            
+        // var el_AddReport = document.getElementById('frmAddReport');
+        // var btn = document.getElementById('submitAddReport');
+       
+        // var errorsAddReport = "";            
+        // var i;
+        // var counter;
+
+        // for (i = 0; i < el_AddReport.length; i++) {
+        //     if(el_AddReport.elements[i].value === "" || el_AddReport.elements[i].value === 0){                   
+        //         errorsAddReport += el_AddReport.elements[i].getAttribute("id") + " cannot be empty." + "<br>";
+        //         counter++;
+        //     }
+        // }
+                
+        // if(errorsAddReport.length > 0){
+        //      btn.addEventListener('click', (e) => {                
+        //         e.preventDefault();                
+        //     });
+        //     ReportAddError("Error Adding Report",errorsAddReport);
+        // }else{
+        //     el_AddReport.submit();
+        // }  
+                
+
+    }
+
+    function validateAddVehicleForm() {
+        
+        var el_AddVehicle = document.getElementById('frmAddVehicle');
+        var btn = document.getElementById('submitAddVehicle');
+
+        var errorsAddVehicle = "";
+        var i;
+        var counter;
+        for (i = 0; i < el_AddVehicle.length; i++) {
+                if((el_AddVehicle.elements[i].value === "" || el_AddVehicle.elements[i].value === 0)
+                    && el_AddVehicle.elements[i].getAttribute("id") !== "submitAddVehicle"){
+                    errorsAddVehicle += el_AddVehicle.elements[i].getAttribute("id") + " cannot be empty" + "<br>";
+                    counter++;
+                }
+        }
+
+        if(errorsAddVehicle.length > 0){
+             btn.addEventListener('click', (e) => {                
+                e.preventDefault();                
+            });            
+            ReportAddError("Error Adding Vehicle",errorsAddVehicle);            
+        }  
+
+        
+       
+    }
+
+    function validateAddDriverInforForm() {
+        
+        var el_DriverInfor = document.getElementById('frmAddDriverInfor');
+        var btn = document.getElementById('submitAddDriverInfor');
+
+        var errorsDriverInfor = "";
+        var i;
+        var counter;
+        for (i = 0; i < el_DriverInfor.length; i++) {
+                if((el_DriverInfor.elements[i].value === "" || el_DriverInfor.elements[i].value === 0 )
+                     && el_DriverInfor.elements[i].getAttribute("id") !== "submitAddDriverInfor"){
+                    errorsDriverInfor += el_DriverInfor.elements[i].getAttribute("id") + " cannot be empty" + "<br>";
+                    counter++;
+                }
+        }
+
+        if(errorsDriverInfor.length > 10){
+             btn.addEventListener('click', (e) => {
+                e.preventDefault();                
+            });
+
+            ReportAddError("Error Adding Driver Infor",errorsDriverInfor);
+        }else{
+            el_DriverInfor.submit();
+        }
+
+    }
+
+    function validateAddRoadFactorsForm() {
+        
+        var el_AddRoadFactors = document.getElementById('frmAddRoadFactors');
+        var btn = document.getElementById('submitAddRoadFactors');
+
+        var errorsRoadFactors = "";
+        var i;
+        var counter;
+        for (i = 0; i < el_AddRoadFactors.length; i++) {
+                if((el_AddRoadFactors.elements[i].value === "" || el_AddRoadFactors.elements[i].value === 0)
+                    && el_AddRoadFactors.elements[i].getAttribute("id") !== "submitAddRoadFactors"){
+                    errorsRoadFactors += el_AddRoadFactors.elements[i].getAttribute("id") + " cannot be empty" + "<br>";
+                    counter++;
+                }
+        }
+
+        if(errorsRoadFactors.length > 10){
+             btn.addEventListener('click', (e) => {
+                e.preventDefault();                
+            });
+
+            ReportAddError("Error Adding Road Factors",errorsRoadFactors);
+        }else{
+            el_AddRoadFactors.submit();
+        }
+
+    }
+
+
+    const forms = document.querySelectorAll('.needs-validation')
+
+    // Loop over them and prevent submission
+    Array.from(forms).forEach(form => {
+        form.addEventListener('submit', event => {
+        if (!form.checkValidity()) {
+            event.preventDefault()
+            event.stopPropagation()
+        }
+
+        form.classList.add('was-validated')
+        }, false)
+    });
+    
+
+</script>
+
+
+
+
+
